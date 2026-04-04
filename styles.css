@@ -163,9 +163,3 @@ th { color: var(--muted); font-weight: 600; }
   .span-2 { grid-column: span 1; }
   .result-card { position: static; }
 }
-
-
-.save-status { margin-top: 12px; min-height: 24px; font-size: 0.95rem; }
-.save-status.success { color: #166534; }
-.save-status.error { color: #b91c1c; }
-.save-status.info { color: #334155; }

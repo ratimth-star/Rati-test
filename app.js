@@ -1,5 +1,4 @@
 const STORAGE_KEY = 'suandok-news-history-v1';
-const SHEET_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbz_mzulEZJF5PlhkGUzPXUX7u0Zjt784oHGnE-iI9lUBgAIrYl0VWOvPbWTUXgq_wcwgQ/exec';
 const selectors = {
   respiratoryRate: document.getElementById('respiratoryRate'),
   spo2: document.getElementById('spo2'),
@@ -19,8 +18,7 @@ const selectors = {
   location: document.getElementById('location'),
   hn: document.getElementById('hn'),
   assessmentTime: document.getElementById('assessmentTime'),
-  installBtn: document.getElementById('installBtn'),
-  saveStatus: document.getElementById('saveStatus')
+  installBtn: document.getElementById('installBtn')
 };
 
 const options = {
@@ -132,48 +130,13 @@ function renderHistory() {
   });
 }
 
-function setSaveStatus(message, type = 'info') {
-  if (!selectors.saveStatus) return;
-  selectors.saveStatus.textContent = message;
-  selectors.saveStatus.className = `save-status ${type}`;
-}
-
-async function saveToGoogleSheet(entry) {
-  const noteParts = [];
-  if (entry.location) noteParts.push(`Location: ${entry.location}`);
-  if (entry.hn) noteParts.push(`HN: ${entry.hn}`);
-  if (entry.hasRed) noteParts.push('RED score');
-  noteParts.push(`Assessment time: ${entry.time}`);
-
-  const payload = {
-    score: entry.score,
-    level: entry.urgency,
-    note: noteParts.join(' | ')
-  };
-
-  const response = await fetch(SHEET_WEBAPP_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'text/plain;charset=utf-8'
-    },
-    body: JSON.stringify(payload)
-  });
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`);
-  }
-
-  return response.json();
-}
-
-async function saveRecord() {
+function saveRecord() {
   const { total, advice, hasRed } = calculateScore();
   const entry = {
     location: selectors.location.value.trim(),
     hn: selectors.hn.value.trim(),
     score: total,
     urgency: hasRed ? `${advice.label} / RED` : advice.label,
-    hasRed,
     time: selectors.assessmentTime.value || new Date().toISOString()
   };
 
@@ -181,19 +144,6 @@ async function saveRecord() {
   items.unshift(entry);
   writeHistory(items.slice(0, 50));
   renderHistory();
-
-  selectors.saveBtn.disabled = true;
-  setSaveStatus('กำลังบันทึกข้อมูล...', 'info');
-
-  try {
-    await saveToGoogleSheet(entry);
-    setSaveStatus('บันทึกลง Google Sheet สำเร็จแล้ว', 'success');
-  } catch (error) {
-    console.error('Save to Google Sheet failed:', error);
-    setSaveStatus('บันทึกในเครื่องสำเร็จ แต่ส่งไป Google Sheet ไม่สำเร็จ', 'error');
-  } finally {
-    selectors.saveBtn.disabled = false;
-  }
 }
 
 function resetForm() {
@@ -202,7 +152,6 @@ function resetForm() {
   document.querySelector('input[name="spo2Scale"][value="1"]').checked = true;
   initializeForm();
   calculateScore();
-  setSaveStatus('');
 }
 
 selectors.saveBtn.addEventListener('click', saveRecord);
@@ -210,7 +159,6 @@ selectors.resetBtn.addEventListener('click', resetForm);
 selectors.clearHistoryBtn.addEventListener('click', () => {
   localStorage.removeItem(STORAGE_KEY);
   renderHistory();
-  setSaveStatus('ล้างประวัติในเครื่องแล้ว', 'info');
 });
 
 document.querySelectorAll('select, input[name="spo2Scale"]').forEach(el => {
