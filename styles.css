@@ -132,6 +132,11 @@ html, body {
   min-height: 12rem;
 }
 
+.hero-card .card-body {
+  position: relative;
+  z-index: 1;
+}
+
 .hero-actions {
   position: absolute;
   top: 1.2rem;
@@ -165,6 +170,33 @@ html, body {
   height: 20rem;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(103, 232, 249, 0.12), transparent 66%);
+}
+
+@media (min-width: 768px) and (max-width: 1199.98px) {
+  .hero-card .card-body {
+    padding-right: 11rem !important;
+  }
+
+  .hero-card::before {
+    width: 12rem;
+    height: 5.75rem;
+    top: -.9rem;
+    right: -4.25rem;
+    opacity: .68;
+  }
+
+  .hero-card::after {
+    right: -6rem;
+    bottom: -5.5rem;
+    width: 14rem;
+    height: 14rem;
+    opacity: .3;
+  }
+
+  .hero-copy h1,
+  .hero-subtitle {
+    max-width: 100%;
+  }
 }
 
 .app-card::before,

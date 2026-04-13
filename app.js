@@ -1,4 +1,4 @@
-const SHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbz_mzulEZJF5PlhkGUzPXUX7u0Zjt784oHGnE-iI9lUBgAIrYl0VWOvPbWTUXgq_wcwgQ/exec";
+const SHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzvTuHAb78nlFWPzu6UAJoI_MPJuviIPxgBVP_xYNp7bP-nmH1RqqqwBUp-iEQ9pVcR/exec";
 const STORAGE_KEY = "suandok-news-history-v2";
 const LANGUAGE_KEY = "suandok-news-language";
 
@@ -759,20 +759,16 @@ function setStatus(message, type = "info") {
 }
 
 async function saveToGoogleSheet(payload) {
-  const res = await fetch(SHEET_WEBAPP_URL, {
+  await fetch(SHEET_WEBAPP_URL, {
     method: "POST",
+    mode: "no-cors",
     headers: {
       "Content-Type": "text/plain;charset=utf-8"
     },
     body: JSON.stringify(payload)
   });
 
-  const text = await res.text();
-  try {
-    return JSON.parse(text);
-  } catch {
-    return { raw: text };
-  }
+  return { ok: true };
 }
 
 async function handleSave() {
@@ -813,12 +809,19 @@ async function handleSave() {
     location,
     hn,
     assessmentTime,
+    respiratoryRate: selectors.respiratoryRate.value || "",
+    spo2: selectors.spo2.value || "",
+    oxygenSupport: selectors.oxygenSupport.value || "",
+    temperature: selectors.temperature.value || "",
+    systolicBP: selectors.systolicBP.value || "",
+    heartRate: selectors.heartRate.value || "",
+    consciousness: selectors.consciousness.value || "",
+    spo2Scale: document.querySelector(".spo2-scale:checked")?.value || "1",
     score,
     level: copy.levelLabels[levelKey],
     levelKey,
     red,
-    savedAt: new Date().toISOString(),
-    spo2Scale: document.querySelector(".spo2-scale:checked")?.value || "1"
+    savedAt: new Date().toISOString()
   };
 
   saveLocal(data);
