@@ -1,10 +1,11 @@
-const CACHE_NAME = 'suandok-news-responsive-v1';
+const CACHE_NAME = 'suandok-news-responsive-v2';
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
   './app.js',
   './manifest.json',
+  './icons/GJMC_logo.png',
   './icons/icon-192.png',
   './icons/icon-512.png'
 ];
