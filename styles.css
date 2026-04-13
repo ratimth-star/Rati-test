@@ -340,6 +340,12 @@ h1, h2, h3, .result-score, .status-pill, .btn, .hero-badge {
   color: var(--text);
 }
 
+.example-note {
+  font-size: .82em;
+  font-weight: 500;
+  opacity: .8;
+}
+
 .form-label {
   font-size: 1.3rem;
   font-weight: 600;
@@ -555,6 +561,12 @@ h1, h2, h3, .result-score, .status-pill, .btn, .hero-badge {
   color: var(--muted);
   font-weight: 600;
   font-size: 1.16rem;
+}
+
+.metric-scale-btn .example-note,
+.metric-scale-label .example-note {
+  font-weight: 500;
+  opacity: .78;
 }
 
 .result-panel,
@@ -814,6 +826,7 @@ h1, h2, h3, .result-score, .status-pill, .btn, .hero-badge {
   line-height: 1.4;
   overflow-wrap: anywhere;
   color: var(--severity-text);
+  font-weight: 800;
 }
 
 .advice-card ul {
@@ -824,6 +837,11 @@ h1, h2, h3, .result-score, .status-pill, .btn, .hero-badge {
   line-height: 1.7;
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+
+.advice-card .advice-emergency-item {
+  color: #b91c1c;
+  font-weight: 800;
 }
 
 .history-table-wrap {

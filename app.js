@@ -37,7 +37,7 @@ const I18N = {
     adviceSectionTitle: "คำแนะนำการพยาบาล",
     metricTitles: {
       respiratoryRate: "อัตราการหายใจ (ครั้ง/นาที)",
-      spo2: "ความอิ่มตัวของออกซิเจนในเลือด (ตัวอย่าง โรคปอดอุดกั้นเรื้อรัง COPD)",
+      spo2: "ความอิ่มตัวของออกซิเจนในเลือด",
       oxygenSupport: "การใช้ออกซิเจนเสริม",
       temperature: "อุณหภูมิ",
       systolicBP: "ความดันโลหิตซิสโตลิก (มม.ปรอท)",
@@ -46,11 +46,11 @@ const I18N = {
     },
     scaleLabels: {
       1: "เกณฑ์ทั่วไป",
-      2: "เสี่ยงภาวะหายใจล้มเหลวจาก CO2 สูง"
+      2: "เสี่ยงภาวะหายใจล้มเหลวจาก CO2 สูง (ตัวอย่าง โรคปอดอุดกั้นเรื้อรัง COPD)"
     },
     spo2ScaleDescriptions: {
       1: "เกณฑ์ทั่วไป",
-      2: "เสี่ยงภาวะหายใจล้มเหลวจาก CO2 สูง"
+      2: "เสี่ยงภาวะหายใจล้มเหลวจาก CO2 สูง (ตัวอย่าง โรคปอดอุดกั้นเรื้อรัง COPD)"
     },
     metrics: {
       respiratoryRate: [
@@ -161,7 +161,7 @@ const I18N = {
       },
       redTitle: "Red Score",
       redItems: [
-        "กรณีพบคะแนนข้อใดข้อหนึ่ง = +3",
+        "กรณีพบคะแนนข้อใดข้อหนึ่ง = +3 เปลี่ยน Triage เป็น Emergency",
         "รายงานพยาบาลและแพทย์ทันที",
         "พิจารณาส่งต่อ ER",
         "ให้การพยาบาลเบื้องต้น เช่น ให้ออกซิเจน",
@@ -215,7 +215,7 @@ const I18N = {
     adviceSectionTitle: "Nursing Advice",
     metricTitles: {
       respiratoryRate: "Respiratory Rate (breaths/min)",
-      spo2: "Oxygen Saturation in Blood (example: Chronic Obstructive Pulmonary Disease, COPD)",
+      spo2: "Oxygen Saturation in Blood",
       oxygenSupport: "Supplemental Oxygen",
       temperature: "Temperature",
       systolicBP: "Systolic Blood Pressure (mmHg)",
@@ -224,11 +224,11 @@ const I18N = {
     },
     scaleLabels: {
       1: "General Criteria",
-      2: "Risk of CO2 Retention"
+      2: "Risk of CO2 Retention (example: Chronic Obstructive Pulmonary Disease, COPD)"
     },
     spo2ScaleDescriptions: {
       1: "General Criteria",
-      2: "Risk of respiratory failure from high CO2"
+      2: "Risk of respiratory failure from high CO2 (example: Chronic Obstructive Pulmonary Disease, COPD)"
     },
     metrics: {
       respiratoryRate: [
@@ -339,7 +339,7 @@ const I18N = {
       },
       redTitle: "Red Score",
       redItems: [
-        "When any single item scores +3",
+        "When any single item scores +3, change triage to Emergency",
         "Notify the nurse and physician immediately",
         "Consider transfer to ER",
         "Provide initial nursing care such as oxygen support",
@@ -432,6 +432,19 @@ function setLocation(value) {
   if (validationActive) updateAssessmentValidation(true);
 }
 
+function formatExampleSuffix(text) {
+  const value = String(text || "");
+  const match = value.match(/^(.*?)(\s*\([^()]+\))$/);
+
+  if (!match) {
+    return escapeHtml(value);
+  }
+
+  const mainText = match[1].trimEnd();
+  const suffix = match[2].trimStart();
+  return `${escapeHtml(mainText)} <span class="example-note">${escapeHtml(suffix)}</span>`;
+}
+
 function applyStaticTranslations() {
   const copy = t();
   document.documentElement.lang = copy.htmlLang;
@@ -455,14 +468,14 @@ function applyStaticTranslations() {
   document.getElementById("metricSectionSubtitle").textContent = copy.metricSectionSubtitle;
   document.getElementById("metricSectionHint").textContent = copy.metricSectionHint;
   document.getElementById("metricTitleRespiratoryRate").textContent = copy.metricTitles.respiratoryRate;
-  document.getElementById("metricTitleSpo2").textContent = copy.metricTitles.spo2;
+  document.getElementById("metricTitleSpo2").innerHTML = formatExampleSuffix(copy.metricTitles.spo2);
   document.getElementById("metricTitleOxygenSupport").textContent = copy.metricTitles.oxygenSupport;
   document.getElementById("metricTitleTemperature").textContent = copy.metricTitles.temperature;
   document.getElementById("metricTitleSystolicBP").textContent = copy.metricTitles.systolicBP;
   document.getElementById("metricTitleHeartRate").textContent = copy.metricTitles.heartRate;
   document.getElementById("metricTitleConsciousness").textContent = copy.metricTitles.consciousness;
   document.getElementById("scale1Label").textContent = copy.scaleLabels[1];
-  document.getElementById("scale2Label").textContent = copy.scaleLabels[2];
+  document.getElementById("scale2Label").innerHTML = formatExampleSuffix(copy.scaleLabels[2]);
   document.getElementById("historySectionTitle").textContent = copy.historySectionTitle;
   document.getElementById("historySectionSubtitle").textContent = copy.historySectionSubtitle;
   selectors.clearHistoryBtn.textContent = copy.clearHistory;
@@ -543,7 +556,7 @@ function renderSpo2Options(scale = "1") {
   const selectedOptionKey = selectors.spo2.dataset.selectedOptionKey || "";
 
   if (label) {
-    label.textContent = copy.spo2ScaleDescriptions[scale] || "";
+    label.innerHTML = formatExampleSuffix(copy.spo2ScaleDescriptions[scale] || "");
   }
 
   if (!options.some((_, index) => `spo2-${index}` === selectedOptionKey)) {
@@ -649,11 +662,15 @@ function updateAdvice(levelKey, red) {
   const copy = t();
   const advice = copy.advice[levelKey] || copy.advice.Normal;
   const adviceTheme = getSeverityTheme(levelKey, false);
+  const renderAdviceItems = items => items.map(item => {
+    const isEmergencyTriage = /triage/i.test(item) && /emergency/i.test(item);
+    return `<li class="${isEmergencyTriage ? "advice-emergency-item" : ""}">${escapeHtml(item)}</li>`;
+  }).join("");
   const extra = red ? `
     <div class="advice-card severity-theme-red">
       <h3>${escapeHtml(copy.advice.redTitle)}</h3>
       <ul>
-        ${copy.advice.redItems.map(item => `<li>${escapeHtml(item)}</li>`).join("")}
+        ${renderAdviceItems(copy.advice.redItems)}
       </ul>
     </div>
   ` : "";
@@ -662,7 +679,7 @@ function updateAdvice(levelKey, red) {
     <div class="advice-card severity-theme-${adviceTheme}">
       <h3>${escapeHtml(advice.title)}</h3>
       <ul>
-        ${advice.items.map(item => `<li>${escapeHtml(item)}</li>`).join("")}
+        ${renderAdviceItems(advice.items)}
       </ul>
       ${extra}
     </div>
