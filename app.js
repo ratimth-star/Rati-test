@@ -30,14 +30,14 @@ const I18N = {
     resultSectionTitle: "ผลการประเมิน",
     resultSectionSubtitle: "อัปเดตแบบเรียลไทม์",
     totalScoreLabel: "คะแนนรวม",
-    urgencyLabelTitle: "ระดับความเร่งด่วน",
+    urgencyLabelTitle: "ระดับ Urgency",
     redFlagTitle: "RED Flag",
     saveBtn: "บันทึกคะแนน",
     resetBtn: "รีเซ็ต",
     adviceSectionTitle: "คำแนะนำการพยาบาล",
     metricTitles: {
       respiratoryRate: "อัตราการหายใจ (ครั้ง/นาที)",
-      spo2: "ความอิ่มตัวของออกซิเจนในเลือด",
+      spo2: "ความอิ่มตัวของออกซิเจนในเลือด (ตัวอย่าง โรคปอดอุดกั้นเรื้อรัง COPD)",
       oxygenSupport: "การใช้ออกซิเจนเสริม",
       temperature: "อุณหภูมิ",
       systolicBP: "ความดันโลหิตซิสโตลิก (มม.ปรอท)",
@@ -111,7 +111,7 @@ const I18N = {
     levelLabels: {
       Normal: "Non-urgent",
       Low: "Semi-urgent",
-      Urgent: "เร่งด่วน",
+      Urgent: "Urgent",
       Emergent: "Emergency"
     },
     scoreStateReady: "พร้อมประเมิน",
@@ -123,7 +123,7 @@ const I18N = {
       Normal: {
         title: "0-2 คะแนน: Non-urgent",
         items: [
-          "ไม่เร่งด่วน / ไม่ฉุกเฉิน",
+          "Non-urgent / ไม่ฉุกเฉิน",
           "ประเมินอาการและอาการแสดงของผู้ป่วย",
           "อธิบายขั้นตอนการรับบริการ"
         ]
@@ -131,7 +131,7 @@ const I18N = {
       Low: {
         title: "3-4 คะแนน: Semi-urgent",
         items: [
-          "เร่งด่วนเล็กน้อย / เจ็บป่วยกึ่งฉุกเฉิน",
+          "Semi-urgent / เจ็บป่วยกึ่งฉุกเฉิน",
           "ประเมินอาการและอาการแสดงของผู้ป่วย",
           "รายงานพยาบาลเพื่อประเมินอาการซ้ำ",
           "ระหว่างรอตรวจ เฝ้าระวังสัญญาณชีพและอาการเปลี่ยนแปลง"
@@ -140,7 +140,7 @@ const I18N = {
       Urgent: {
         title: "5-6 คะแนน: Urgent",
         items: [
-          "เร่งด่วน / เจ็บป่วยฉุกเฉินระดับปานกลาง",
+          "Urgent / เจ็บป่วยฉุกเฉินระดับปานกลาง",
           "ประเมินอาการและอาการแสดงของผู้ป่วย",
           "รายงานพยาบาลเพื่อประเมินอาการซ้ำ",
           "กรณีผู้ป่วยอยู่ OPD ให้พิจารณาส่งต่อ ER",
@@ -215,7 +215,7 @@ const I18N = {
     adviceSectionTitle: "Nursing Advice",
     metricTitles: {
       respiratoryRate: "Respiratory Rate (breaths/min)",
-      spo2: "Oxygen Saturation in Blood",
+      spo2: "Oxygen Saturation in Blood (example: Chronic Obstructive Pulmonary Disease, COPD)",
       oxygenSupport: "Supplemental Oxygen",
       temperature: "Temperature",
       systolicBP: "Systolic Blood Pressure (mmHg)",
@@ -634,11 +634,23 @@ function getUrgencyClass(levelKey) {
   }
 }
 
+function getSeverityTheme(levelKey, red) {
+  if (red) return "red";
+
+  switch (levelKey) {
+    case "Emergent": return "emergent";
+    case "Urgent": return "urgent";
+    case "Low": return "low";
+    default: return "normal";
+  }
+}
+
 function updateAdvice(levelKey, red) {
   const copy = t();
   const advice = copy.advice[levelKey] || copy.advice.Normal;
+  const adviceTheme = getSeverityTheme(levelKey, false);
   const extra = red ? `
-    <div class="advice-card">
+    <div class="advice-card severity-theme-red">
       <h3>${escapeHtml(copy.advice.redTitle)}</h3>
       <ul>
         ${copy.advice.redItems.map(item => `<li>${escapeHtml(item)}</li>`).join("")}
@@ -647,7 +659,7 @@ function updateAdvice(levelKey, red) {
   ` : "";
 
   selectors.adviceBox.innerHTML = `
-    <div class="advice-card">
+    <div class="advice-card severity-theme-${adviceTheme}">
       <h3>${escapeHtml(advice.title)}</h3>
       <ul>
         ${advice.items.map(item => `<li>${escapeHtml(item)}</li>`).join("")}
@@ -660,7 +672,17 @@ function updateAdvice(levelKey, red) {
 function updateResultPanelState(score, red, levelKey) {
   if (!selectors.resultPanel) return;
 
-  selectors.resultPanel.classList.remove("panel-warning", "panel-danger");
+  selectors.resultPanel.classList.remove(
+    "panel-warning",
+    "panel-danger",
+    "severity-theme-normal",
+    "severity-theme-low",
+    "severity-theme-urgent",
+    "severity-theme-emergent",
+    "severity-theme-red"
+  );
+
+  selectors.resultPanel.classList.add(`severity-theme-${getSeverityTheme(levelKey, red)}`);
 
   if (red || levelKey === "Emergent") {
     selectors.resultPanel.classList.add("panel-danger");
@@ -678,6 +700,7 @@ function updateUI() {
   const levelKey = getRiskLevel(score);
   const red = checkRedFlag();
   const urgencyClass = getUrgencyClass(levelKey);
+  const scoreStateClass = red ? "watch" : score === 0 ? "ready" : "active";
 
   selectors.totalScore.textContent = score;
   selectors.urgencyLabel.textContent = copy.levelLabels[levelKey];
@@ -685,7 +708,7 @@ function updateUI() {
   selectors.redFlag.textContent = red ? copy.redFound : copy.redNotFound;
   selectors.redFlag.className = `status-pill ${red ? "danger" : "neutral"}`;
   selectors.scoreStateTag.textContent = red ? copy.scoreStateWatch : score === 0 ? copy.scoreStateReady : copy.scoreStateInProgress;
-  selectors.scoreStateTag.className = `badge rounded-pill px-3 py-2 ${red ? "text-bg-danger" : score === 0 ? "text-bg-secondary" : "text-bg-info"}`;
+  selectors.scoreStateTag.className = `badge rounded-pill px-3 py-2 score-state-tag ${scoreStateClass}`;
 
   updateMetricProgress(score);
   updateAssessmentValidation();
