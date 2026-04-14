@@ -161,7 +161,7 @@ const I18N = {
       },
       redTitle: "Red Score",
       redItems: [
-        "กรณีพบคะแนนข้อใดข้อหนึ่ง = +3 เปลี่ยน Triage เป็น Emergency",
+        "กรณีพบคะแนนข้อใดข้อหนึ่ง = +3 เปลี่ยน Triage เป็น Urgency",
         "รายงานพยาบาลและแพทย์ทันที",
         "พิจารณาส่งต่อ ER",
         "ให้การพยาบาลเบื้องต้น เช่น ให้ออกซิเจน",
@@ -339,7 +339,7 @@ const I18N = {
       },
       redTitle: "Red Score",
       redItems: [
-        "When any single item scores +3, change triage to Emergency",
+        "When any single item scores +3, change triage to Urgency",
         "Notify the nurse and physician immediately",
         "Consider transfer to ER",
         "Provide initial nursing care such as oxygen support",
@@ -663,8 +663,8 @@ function updateAdvice(levelKey, red) {
   const advice = copy.advice[levelKey] || copy.advice.Normal;
   const adviceTheme = getSeverityTheme(levelKey, false);
   const renderAdviceItems = items => items.map(item => {
-    const isEmergencyTriage = /triage/i.test(item) && /emergency/i.test(item);
-    return `<li class="${isEmergencyTriage ? "advice-emergency-item" : ""}">${escapeHtml(item)}</li>`;
+    const isUrgencyTriage = /triage/i.test(item) && /urgency/i.test(item);
+    return `<li class="${isUrgencyTriage ? "advice-emergency-item" : ""}">${escapeHtml(item)}</li>`;
   }).join("");
   const extra = red ? `
     <div class="advice-card severity-theme-red">
