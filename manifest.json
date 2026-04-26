@@ -1,6 +1,6 @@
 {
   "name": "NEWS",
-  "short_name": "NEWS PWA",
+  "short_name": "NEWS",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#081120",
