@@ -1,4 +1,4 @@
-const CACHE_NAME = 'suandok-news-responsive-v2';
+const CACHE_NAME = 'news-pwa-v3';
 const ASSETS = [
   './',
   './index.html',
