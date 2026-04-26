@@ -1,5 +1,5 @@
 {
-  "name": "SUANDOK NEWS Responsive PWA",
+  "name": "NEWS",
   "short_name": "NEWS PWA",
   "start_url": "./index.html",
   "display": "standalone",
