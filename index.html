@@ -266,6 +266,39 @@
                 <button id="clearHistoryBtn" class="btn btn-outline-danger btn-sm" type="button">ล้างประวัติ</button>
               </div>
 
+              <div class="history-filter-panel mb-3">
+                <div class="row g-2 align-items-end">
+                  <div class="col-12 col-md-3">
+                    <label id="historyFilterDateLabel" for="historyFilterDate" class="form-label mb-1">เลือกวันที่</label>
+                    <input id="historyFilterDate" class="form-control custom-control" type="date" />
+                  </div>
+                  <div class="col-12 col-md-3">
+                    <label id="historyFilterHnLabel" for="historyFilterHn" class="form-label mb-1">ค้นหา HN</label>
+                    <input id="historyFilterHn" class="form-control custom-control" type="text" inputmode="numeric" maxlength="9" placeholder="เช่น 123456789" />
+                  </div>
+                  <div class="col-12 col-md-3">
+                    <label id="historyFilterLocationLabel" for="historyFilterLocation" class="form-label mb-1">สถานที่</label>
+                    <select id="historyFilterLocation" class="form-select custom-control"></select>
+                  </div>
+                  <div class="col-12 col-md-3">
+                    <label id="historyFilterLevelLabel" for="historyFilterLevel" class="form-label mb-1">ระดับ</label>
+                    <select id="historyFilterLevel" class="form-select custom-control"></select>
+                  </div>
+                  <div class="col-12 col-md-3">
+                    <label id="historyFilterRedLabel" for="historyFilterRed" class="form-label mb-1">RED Flag</label>
+                    <select id="historyFilterRed" class="form-select custom-control"></select>
+                  </div>
+                  <div class="col-12 col-md-9">
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                      <button id="refreshHistoryBtn" class="btn btn-outline-light flex-md-fill" type="button">รีเฟรช</button>
+                      <button id="resetHistoryFiltersBtn" class="btn btn-outline-secondary flex-md-fill" type="button">ล้างตัวกรอง</button>
+                    </div>
+                  </div>
+                </div>
+                <p id="historyResultCount" class="history-result-count mb-0" aria-live="polite"></p>
+                <p id="historySourceNote" class="history-source-note mb-0" aria-live="polite"></p>
+              </div>
+
               <div class="table-responsive history-table-wrap">
                 <table class="table table-dark align-middle mb-0 custom-table">
                   <thead>

@@ -1,6 +1,7 @@
 const SHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzvTuHAb78nlFWPzu6UAJoI_MPJuviIPxgBVP_xYNp7bP-nmH1RqqqwBUp-iEQ9pVcR/exec";
 const STORAGE_KEY = "suandok-news-history-v2";
 const LANGUAGE_KEY = "suandok-news-language";
+const HISTORY_FETCH_LIMIT = 100;
 
 const I18N = {
   th: {
@@ -20,13 +21,30 @@ const I18N = {
     metricSectionSubtitle: "เลือกค่าที่ตรงกับการประเมินผู้ป่วย",
     metricSectionHint: "ระบบจะคำนวณคะแนนให้อัตโนมัติ",
     historySectionTitle: "ประวัติการบันทึก",
-    historySectionSubtitle: "เก็บไว้ในเครื่อง และสามารถส่งต่อไป Google Sheet ได้",
-    clearHistory: "ล้างประวัติ",
+    historySectionSubtitle: "เก็บไว้ในเครื่อง และสามารถดึงจาก Google Sheet พร้อมค้นหาตามวันที่หรือ HN ได้",
+    clearHistory: "ล้างข้อมูลในเครื่อง",
     historyHeadLocation: "สถานที่",
     historyHeadHn: "HN",
     historyHeadScore: "คะแนน",
     historyHeadLevel: "ระดับ",
     historyHeadTime: "เวลา",
+    historyFilterDateLabel: "เลือกวันที่",
+    historyFilterHnLabel: "ค้นหา HN",
+    historyFilterLocationLabel: "สถานที่",
+    historyFilterLevelLabel: "ระดับ",
+    historyFilterRedLabel: "RED Flag",
+    historyFilterHnPlaceholder: "เช่น 123456789",
+    historyRefresh: "รีเฟรช",
+    historyResetFilters: "ล้างตัวกรอง",
+    historyLoading: "กำลังโหลดประวัติจาก Google Sheet...",
+    historySourceGoogle: "กำลังแสดงข้อมูลจาก Google Sheet",
+    historySourceLocal: "แสดงข้อมูลจากเครื่อง เนื่องจากไม่สามารถโหลด Google Sheet ได้",
+    historySourceEmpty: "ยังไม่พบข้อมูลตามเงื่อนไขที่เลือก",
+    historyResultsCount: "พบ {count} รายการ",
+    historyResultsCountZero: "ไม่พบรายการ",
+    historyFilterAllOption: "ทั้งหมด",
+    historyFilterRedOnly: "พบ RED",
+    historyFilterRedNone: "ไม่พบ RED",
     resultSectionTitle: "ผลการประเมิน",
     resultSectionSubtitle: "อัปเดตแบบเรียลไทม์",
     totalScoreLabel: "คะแนนรวม",
@@ -178,7 +196,8 @@ const I18N = {
       saveSuccess: "บันทึกลงเครื่องและส่งไป Google Sheet สำเร็จ",
       saveError: "บันทึกลงเครื่องสำเร็จ แต่ส่งไป Google Sheet ไม่สำเร็จ",
       resetSuccess: "รีเซ็ตข้อมูลเรียบร้อย",
-      clearHistorySuccess: "ล้างประวัติเรียบร้อย"
+      clearHistorySuccess: "ล้างข้อมูลในเครื่องเรียบร้อย",
+      historyLoaded: "โหลดประวัติลงในฟอร์มเรียบร้อย และล็อกค่าไว้แล้ว กดรีเซ็ตหากต้องการกรอกใหม่"
     }
   },
   en: {
@@ -198,13 +217,30 @@ const I18N = {
     metricSectionSubtitle: "Choose values that match the patient assessment",
     metricSectionHint: "Scores are calculated automatically",
     historySectionTitle: "Saved History",
-    historySectionSubtitle: "Stored on this device and can also be sent to Google Sheet",
-    clearHistory: "Clear History",
+    historySectionSubtitle: "Stored on this device and can also be loaded from Google Sheet with date or HN filters",
+    clearHistory: "Clear Local Cache",
     historyHeadLocation: "Location",
     historyHeadHn: "HN",
     historyHeadScore: "Score",
     historyHeadLevel: "Level",
     historyHeadTime: "Time",
+    historyFilterDateLabel: "Select Date",
+    historyFilterHnLabel: "Search HN",
+    historyFilterLocationLabel: "Location",
+    historyFilterLevelLabel: "Level",
+    historyFilterRedLabel: "RED Flag",
+    historyFilterHnPlaceholder: "e.g. 123456789",
+    historyRefresh: "Refresh",
+    historyResetFilters: "Reset Filters",
+    historyLoading: "Loading history from Google Sheet...",
+    historySourceGoogle: "Showing data from Google Sheet",
+    historySourceLocal: "Showing local data because Google Sheet could not be loaded",
+    historySourceEmpty: "No records matched the selected filters",
+    historyResultsCount: "{count} records found",
+    historyResultsCountZero: "No matching records",
+    historyFilterAllOption: "All",
+    historyFilterRedOnly: "RED Found",
+    historyFilterRedNone: "No RED",
     resultSectionTitle: "Assessment Result",
     resultSectionSubtitle: "Updated in real time",
     totalScoreLabel: "Total Score",
@@ -356,7 +392,8 @@ const I18N = {
       saveSuccess: "Saved locally and sent to Google Sheet successfully",
       saveError: "Saved locally, but sending to Google Sheet failed",
       resetSuccess: "Form reset successfully",
-      clearHistorySuccess: "History cleared successfully"
+      clearHistorySuccess: "Local cache cleared successfully",
+      historyLoaded: "History record loaded into the form and locked. Press reset to enter new values"
     }
   }
 };
@@ -382,6 +419,15 @@ const selectors = {
   adviceBox: document.getElementById("adviceBox"),
   historyTable: document.getElementById("historyTable"),
   clearHistoryBtn: document.getElementById("clearHistoryBtn"),
+  refreshHistoryBtn: document.getElementById("refreshHistoryBtn"),
+  resetHistoryFiltersBtn: document.getElementById("resetHistoryFiltersBtn"),
+  historyFilterDate: document.getElementById("historyFilterDate"),
+  historyFilterHn: document.getElementById("historyFilterHn"),
+  historyFilterLocation: document.getElementById("historyFilterLocation"),
+  historyFilterLevel: document.getElementById("historyFilterLevel"),
+  historyFilterRed: document.getElementById("historyFilterRed"),
+  historyResultCount: document.getElementById("historyResultCount"),
+  historySourceNote: document.getElementById("historySourceNote"),
   installBtn: document.getElementById("installBtn"),
   scoreStateTag: document.getElementById("scoreStateTag"),
   langThBtn: document.getElementById("langThBtn"),
@@ -404,6 +450,16 @@ const selectors = {
 let deferredPrompt = null;
 let currentLanguage = localStorage.getItem(LANGUAGE_KEY) || "th";
 let validationActive = false;
+let historyFilterTimer = null;
+let currentEditingRecord = null;
+let historyFormLocked = false;
+const historyState = {
+  remoteItems: [],
+  displayedItems: [],
+  remoteLoaded: false,
+  remoteFailed: false,
+  loading: false
+};
 
 function t() {
   return I18N[currentLanguage] || I18N.th;
@@ -413,6 +469,61 @@ function setDefaultAssessmentTime() {
   const now = new Date();
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
   selectors.assessmentTime.value = now.toISOString().slice(0, 16);
+}
+
+function getTodayDateValue() {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  return now.toISOString().slice(0, 10);
+}
+
+function setDefaultHistoryDate() {
+  if (!selectors.historyFilterDate) return;
+  selectors.historyFilterDate.value = getTodayDateValue();
+}
+
+function getHistoryLevelOptions(copy = t()) {
+  return [
+    { value: "", label: copy.historyFilterAllOption },
+    { value: "Normal", label: copy.levelLabels.Normal },
+    { value: "Low", label: copy.levelLabels.Low },
+    { value: "Urgent", label: copy.levelLabels.Urgent },
+    { value: "Emergent", label: copy.levelLabels.Emergent }
+  ];
+}
+
+function populateHistoryFilterOptions() {
+  const copy = t();
+  const selectedLocation = selectors.historyFilterLocation?.value || "";
+  const selectedLevel = selectors.historyFilterLevel?.value || "";
+  const selectedRed = selectors.historyFilterRed?.value || "";
+
+  if (selectors.historyFilterLocation) {
+    selectors.historyFilterLocation.innerHTML = [
+      { value: "", label: copy.historyFilterAllOption },
+      { value: "OPD", label: "OPD" },
+      { value: "Ward", label: "Ward" },
+      { value: "ER", label: "ER" },
+      { value: "ICU", label: "ICU" }
+    ].map(option => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`).join("");
+    selectors.historyFilterLocation.value = selectedLocation;
+  }
+
+  if (selectors.historyFilterLevel) {
+    selectors.historyFilterLevel.innerHTML = getHistoryLevelOptions(copy)
+      .map(option => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`)
+      .join("");
+    selectors.historyFilterLevel.value = selectedLevel;
+  }
+
+  if (selectors.historyFilterRed) {
+    selectors.historyFilterRed.innerHTML = [
+      { value: "", label: copy.historyFilterAllOption },
+      { value: "true", label: copy.historyFilterRedOnly },
+      { value: "false", label: copy.historyFilterRedNone }
+    ].map(option => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`).join("");
+    selectors.historyFilterRed.value = selectedRed;
+  }
 }
 
 function sanitizeHN(value) {
@@ -430,6 +541,26 @@ function setLocation(value) {
   selectors.location.value = value;
   syncLocationButtons();
   if (validationActive) updateAssessmentValidation(true);
+}
+
+function setFormLocked(locked) {
+  historyFormLocked = Boolean(locked);
+
+  selectors.assessmentTime.toggleAttribute("disabled", historyFormLocked);
+  selectors.hn.toggleAttribute("disabled", historyFormLocked);
+  document.querySelectorAll(".spo2-scale").forEach(input => {
+    input.disabled = historyFormLocked;
+  });
+  document.querySelectorAll(".metric-option-button").forEach(button => {
+    button.toggleAttribute("disabled", historyFormLocked);
+  });
+  document.querySelectorAll(".location-option").forEach(button => {
+    button.toggleAttribute("disabled", historyFormLocked);
+  });
+
+  selectors.saveBtn.toggleAttribute("disabled", historyFormLocked);
+  selectors.mobileSaveBtn?.toggleAttribute("disabled", historyFormLocked);
+  selectors.assessmentCard?.classList.toggle("history-locked", historyFormLocked);
 }
 
 function formatExampleSuffix(text) {
@@ -479,6 +610,15 @@ function applyStaticTranslations() {
   document.getElementById("historySectionTitle").textContent = copy.historySectionTitle;
   document.getElementById("historySectionSubtitle").textContent = copy.historySectionSubtitle;
   selectors.clearHistoryBtn.textContent = copy.clearHistory;
+  if (selectors.refreshHistoryBtn) selectors.refreshHistoryBtn.textContent = copy.historyRefresh;
+  if (selectors.resetHistoryFiltersBtn) selectors.resetHistoryFiltersBtn.textContent = copy.historyResetFilters;
+  if (document.getElementById("historyFilterDateLabel")) document.getElementById("historyFilterDateLabel").textContent = copy.historyFilterDateLabel;
+  if (document.getElementById("historyFilterHnLabel")) document.getElementById("historyFilterHnLabel").textContent = copy.historyFilterHnLabel;
+  if (document.getElementById("historyFilterLocationLabel")) document.getElementById("historyFilterLocationLabel").textContent = copy.historyFilterLocationLabel;
+  if (document.getElementById("historyFilterLevelLabel")) document.getElementById("historyFilterLevelLabel").textContent = copy.historyFilterLevelLabel;
+  if (document.getElementById("historyFilterRedLabel")) document.getElementById("historyFilterRedLabel").textContent = copy.historyFilterRedLabel;
+  if (selectors.historyFilterHn) selectors.historyFilterHn.placeholder = copy.historyFilterHnPlaceholder;
+  populateHistoryFilterOptions();
   document.getElementById("historyHeadLocation").textContent = copy.historyHeadLocation;
   document.getElementById("historyHeadHn").textContent = copy.historyHeadHn;
   document.getElementById("historyHeadScore").textContent = copy.historyHeadScore;
@@ -576,6 +716,7 @@ function renderAllMetricButtons() {
   renderMetricButtons("heartRateOptions", "heartRate", copy.metrics.heartRate);
   renderMetricButtons("consciousnessOptions", "consciousness", copy.metrics.consciousness);
   renderSpo2Options(document.querySelector(".spo2-scale:checked")?.value || "1");
+  if (historyFormLocked) setFormLocked(true);
 }
 
 function calculateScore() {
@@ -741,10 +882,212 @@ function getHistory() {
   }
 }
 
-function saveLocal(data) {
+function isSameHistoryRecord(item, match) {
+  if (!item || !match) return false;
+  return String(item.savedAt || "") === String(match.savedAt || "")
+    && sanitizeHN(item.hn || "") === sanitizeHN(match.hn || "")
+    && String(item.assessmentTime || "") === String(match.assessmentTime || "");
+}
+
+function saveLocal(data, match = null) {
   const history = getHistory();
-  history.unshift(data);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(history.slice(0, 100)));
+  const nextHistory = [...history];
+  const matchIndex = match ? nextHistory.findIndex(item => isSameHistoryRecord(item, match)) : -1;
+
+  if (matchIndex >= 0) {
+    nextHistory[matchIndex] = data;
+  } else {
+    nextHistory.unshift(data);
+  }
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(nextHistory.slice(0, 100)));
+}
+
+function getHistoryFilters() {
+  const hn = sanitizeHN(selectors.historyFilterHn?.value || "");
+
+  return {
+    date: hn ? "" : (selectors.historyFilterDate?.value || ""),
+    hn,
+    location: selectors.historyFilterLocation?.value || "",
+    levelKey: selectors.historyFilterLevel?.value || "",
+    red: selectors.historyFilterRed?.value || ""
+  };
+}
+
+function normalizeHistoryItem(item = {}) {
+  return {
+    location: item.location || "",
+    hn: sanitizeHN(item.hn || ""),
+    assessmentTime: item.assessmentTime || "",
+    respiratoryRate: item.respiratoryRate || "",
+    spo2: item.spo2 || "",
+    oxygenSupport: item.oxygenSupport || "",
+    temperature: item.temperature || "",
+    systolicBP: item.systolicBP || "",
+    heartRate: item.heartRate || "",
+    consciousness: item.consciousness || "",
+    spo2Scale: item.spo2Scale || "1",
+    score: Number.parseInt(item.score ?? 0, 10) || 0,
+    level: item.level || "",
+    levelKey: item.levelKey || "",
+    red: String(item.red).toLowerCase() === "true" || item.red === true,
+    savedAt: item.savedAt || ""
+  };
+}
+
+function getHistoryItemDate(item) {
+  const rawValue = item.assessmentTime || item.savedAt || "";
+  if (!rawValue) return "";
+
+  const date = new Date(rawValue);
+  if (Number.isNaN(date.getTime())) {
+    const match = String(rawValue).match(/^(\d{4}-\d{2}-\d{2})/);
+    return match ? match[1] : "";
+  }
+
+  const adjusted = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+  return adjusted.toISOString().slice(0, 10);
+}
+
+function filterHistoryItems(items, filters = getHistoryFilters()) {
+  return items.filter(item => {
+    const matchesDate = !filters.date || getHistoryItemDate(item) === filters.date;
+    const matchesHn = !filters.hn || sanitizeHN(item.hn || "").includes(filters.hn);
+    const matchesLocation = !filters.location || String(item.location || "").trim() === filters.location;
+    const matchesLevel = !filters.levelKey || String(item.levelKey || "").trim() === filters.levelKey;
+    const redValue = String(item.red).toLowerCase() === "true";
+    const matchesRed = !filters.red || String(redValue) === filters.red;
+    return matchesDate && matchesHn && matchesLocation && matchesLevel && matchesRed;
+  });
+}
+
+function getDisplayedHistory(filters = getHistoryFilters()) {
+  const remoteItems = historyState.remoteLoaded ? historyState.remoteItems : [];
+  if (remoteItems.length || historyState.remoteLoaded) {
+    return {
+      items: filterHistoryItems(remoteItems, filters),
+      source: historyState.remoteFailed ? "local" : "google"
+    };
+  }
+
+  return {
+    items: filterHistoryItems(getHistory(), filters),
+    source: "local"
+  };
+}
+
+function formatAssessmentDateTimeForInput(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return String(value).slice(0, 16);
+  }
+
+  const adjusted = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+  return adjusted.toISOString().slice(0, 16);
+}
+
+function buildHistoryItemKeys(item = {}) {
+  const hn = sanitizeHN(item.hn || "");
+  return [
+    `${hn}|${item.assessmentTime || ""}|${item.savedAt || ""}`,
+    `${hn}|${item.assessmentTime || ""}`
+  ];
+}
+
+function mergeLocalHistoryMetadata(items) {
+  const localEntries = getHistory();
+  const metadataMap = new Map();
+
+  localEntries.forEach(entry => {
+    buildHistoryItemKeys(entry).forEach(key => {
+      if (key && !metadataMap.has(key) && entry.selectionKeys) {
+        metadataMap.set(key, entry.selectionKeys);
+      }
+    });
+  });
+
+  return items.map(item => {
+    const matchKey = buildHistoryItemKeys(item).find(key => metadataMap.has(key));
+    if (!matchKey) return item;
+    return {
+      ...item,
+      selectionKeys: metadataMap.get(matchKey)
+    };
+  });
+}
+
+function restoreMetricSelection(inputId, value, preferredOptionKey = "") {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+
+  const normalizedValue = value === undefined || value === null ? "" : String(value);
+  if (!normalizedValue) {
+    input.value = "";
+    input.dataset.selectedOptionKey = "";
+    syncMetricButtons(inputId);
+    return;
+  }
+
+  let optionKey = preferredOptionKey;
+  if (optionKey && !document.querySelector(`[data-input-target="${inputId}"][data-option-key="${optionKey}"]`)) {
+    optionKey = "";
+  }
+
+  if (!optionKey) {
+    optionKey = document.querySelector(`[data-input-target="${inputId}"][data-score-value="${normalizedValue}"]`)?.dataset.optionKey || "";
+  }
+
+  input.value = normalizedValue;
+  input.dataset.selectedOptionKey = optionKey;
+  syncMetricButtons(inputId);
+}
+
+function loadHistoryItemIntoForm(item) {
+  if (!item) return;
+
+  const copy = t();
+  const selectionKeys = item.selectionKeys || {};
+  const spo2Scale = String(item.spo2Scale || "1");
+  currentEditingRecord = {
+    savedAt: item.savedAt || "",
+    hn: sanitizeHN(item.hn || ""),
+    assessmentTime: item.assessmentTime || ""
+  };
+
+  validationActive = false;
+  document.querySelectorAll(".score-input").forEach(input => {
+    input.value = "";
+    input.dataset.selectedOptionKey = "";
+  });
+
+  selectors.assessmentTime.value = formatAssessmentDateTimeForInput(item.assessmentTime || item.savedAt);
+  selectors.hn.value = sanitizeHN(item.hn || "");
+  setLocation(String(item.location || "").trim());
+
+  const scaleInput = document.querySelector(`.spo2-scale[value="${spo2Scale}"]`);
+  if (scaleInput) {
+    scaleInput.checked = true;
+  } else {
+    document.getElementById("scale1").checked = true;
+  }
+
+  renderAllMetricButtons();
+
+  restoreMetricSelection("respiratoryRate", item.respiratoryRate, selectionKeys.respiratoryRate || "");
+  restoreMetricSelection("spo2", item.spo2, selectionKeys.spo2 || "");
+  restoreMetricSelection("oxygenSupport", item.oxygenSupport, selectionKeys.oxygenSupport || "");
+  restoreMetricSelection("temperature", item.temperature, selectionKeys.temperature || "");
+  restoreMetricSelection("systolicBP", item.systolicBP, selectionKeys.systolicBP || "");
+  restoreMetricSelection("heartRate", item.heartRate, selectionKeys.heartRate || "");
+  restoreMetricSelection("consciousness", item.consciousness, selectionKeys.consciousness || "");
+
+  updateAssessmentValidation(false);
+  updateUI();
+  setFormLocked(true);
+  setStatus(copy.statuses.historyLoaded, "success");
+  selectors.assessmentCard?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function formatDateTime(value) {
@@ -760,21 +1103,49 @@ function formatDateTime(value) {
   });
 }
 
+function updateHistorySourceNote(source, itemCount) {
+  const copy = t();
+  if (!selectors.historySourceNote) return;
+  const filters = getHistoryFilters();
+  const hasFilters = Boolean(filters.date || filters.hn || filters.location || filters.levelKey || filters.red);
+
+  let message = source === "google" ? copy.historySourceGoogle : copy.historySourceLocal;
+  if (!itemCount) {
+    message = hasFilters || historyState.remoteLoaded ? copy.historySourceEmpty : copy.noHistory;
+  }
+
+  selectors.historySourceNote.textContent = message;
+  selectors.historySourceNote.classList.toggle("error", source !== "google" && Boolean(historyState.remoteFailed));
+}
+
+function updateHistoryResultCount(itemCount) {
+  const copy = t();
+  if (!selectors.historyResultCount) return;
+
+  selectors.historyResultCount.textContent = itemCount
+    ? copy.historyResultsCount.replace("{count}", String(itemCount))
+    : copy.historyResultsCountZero;
+}
+
 function renderHistory() {
   const copy = t();
-  const history = getHistory();
+  const { items, source } = getDisplayedHistory();
+  historyState.displayedItems = items;
 
-  if (!history.length) {
+  updateHistorySourceNote(source, items.length);
+  updateHistoryResultCount(items.length);
+
+  if (!items.length) {
     selectors.historyTable.innerHTML = `
       <tr>
-        <td colspan="5" class="text-center text-secondary-light py-4">${escapeHtml(copy.noHistory)}</td>
+        <td colspan="5" class="text-center text-secondary-light py-4">${escapeHtml(historyState.remoteLoaded ? copy.historySourceEmpty : copy.noHistory)}</td>
       </tr>
     `;
     return;
   }
 
-  selectors.historyTable.innerHTML = history.map(item => `
-    <tr>
+  selectors.historyTable.innerHTML = items.map((item, index) => `
+    <tr class="history-row" data-history-index="${index}">
       <td>${escapeHtml(item.location || "-")}</td>
       <td>${escapeHtml(item.hn || "-")}</td>
       <td><span class="badge text-bg-dark border">${item.score}</span></td>
@@ -798,6 +1169,68 @@ function setStatus(message, type = "info") {
   selectors.saveStatus.className = `save-status ${type}`;
 }
 
+async function fetchHistoryFromGoogleSheet(filters = getHistoryFilters()) {
+  const params = new URLSearchParams({
+    mode: "history",
+    limit: String(HISTORY_FETCH_LIMIT)
+  });
+
+  if (filters.date) params.set("date", filters.date);
+  if (filters.hn) params.set("hn", filters.hn);
+  if (filters.location) params.set("location", filters.location);
+  if (filters.levelKey) params.set("levelKey", filters.levelKey);
+  if (filters.red) params.set("red", filters.red);
+
+  const response = await fetch(`${SHEET_WEBAPP_URL}?${params.toString()}`, {
+    method: "GET",
+    mode: "cors",
+    cache: "no-store"
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  const payload = await response.json();
+  if (!payload || payload.ok !== true || !Array.isArray(payload.items)) {
+    throw new Error("Invalid history response");
+  }
+
+  return mergeLocalHistoryMetadata(payload.items.map(normalizeHistoryItem));
+}
+
+async function refreshHistory(options = {}) {
+  const { silent = false } = options;
+  const copy = t();
+
+  historyState.loading = true;
+  if (!silent && selectors.historySourceNote) {
+    selectors.historySourceNote.textContent = copy.historyLoading;
+    selectors.historySourceNote.classList.remove("error");
+  }
+
+  try {
+    historyState.remoteItems = await fetchHistoryFromGoogleSheet();
+    historyState.remoteLoaded = true;
+    historyState.remoteFailed = false;
+  } catch (error) {
+    historyState.remoteItems = [];
+    historyState.remoteLoaded = false;
+    historyState.remoteFailed = true;
+    console.error(error);
+  } finally {
+    historyState.loading = false;
+    renderHistory();
+  }
+}
+
+function scheduleHistoryRefresh() {
+  window.clearTimeout(historyFilterTimer);
+  historyFilterTimer = window.setTimeout(() => {
+    refreshHistory({ silent: true });
+  }, 250);
+}
+
 async function saveToGoogleSheet(payload) {
   await fetch(SHEET_WEBAPP_URL, {
     method: "POST",
@@ -811,8 +1244,21 @@ async function saveToGoogleSheet(payload) {
   return { ok: true };
 }
 
+function getEditingMatchPayload() {
+  if (!currentEditingRecord) return null;
+  return {
+    savedAt: currentEditingRecord.savedAt || "",
+    hn: currentEditingRecord.hn || "",
+    assessmentTime: currentEditingRecord.assessmentTime || ""
+  };
+}
+
 async function handleSave() {
   const copy = t();
+  if (historyFormLocked) {
+    setStatus(copy.statuses.historyLoaded, "info");
+    return;
+  }
   const score = calculateScore();
   const levelKey = getRiskLevel(score);
   const red = checkRedFlag();
@@ -844,6 +1290,8 @@ async function handleSave() {
 
   validationActive = false;
   updateAssessmentValidation(false);
+  const editingMatch = getEditingMatchPayload();
+  const savedAt = editingMatch?.savedAt || new Date().toISOString();
 
   const data = {
     location,
@@ -861,24 +1309,44 @@ async function handleSave() {
     level: copy.levelLabels[levelKey],
     levelKey,
     red,
-    savedAt: new Date().toISOString()
+    savedAt,
+    mode: editingMatch ? "update" : "create",
+    match: editingMatch,
+    selectionKeys: {
+      respiratoryRate: selectors.respiratoryRate.dataset.selectedOptionKey || "",
+      spo2: selectors.spo2.dataset.selectedOptionKey || "",
+      oxygenSupport: selectors.oxygenSupport.dataset.selectedOptionKey || "",
+      temperature: selectors.temperature.dataset.selectedOptionKey || "",
+      systolicBP: selectors.systolicBP.dataset.selectedOptionKey || "",
+      heartRate: selectors.heartRate.dataset.selectedOptionKey || "",
+      consciousness: selectors.consciousness.dataset.selectedOptionKey || ""
+    }
   };
 
-  saveLocal(data);
+  saveLocal(data, editingMatch);
   renderHistory();
   setStatus(copy.statuses.savePending, "info");
 
   try {
     await saveToGoogleSheet(data);
     setStatus(copy.statuses.saveSuccess, "success");
+    currentEditingRecord = {
+      savedAt: data.savedAt,
+      hn: data.hn,
+      assessmentTime: data.assessmentTime
+    };
   } catch (error) {
     console.error(error);
     setStatus(copy.statuses.saveError, "error");
+  } finally {
+    await refreshHistory({ silent: true });
   }
 }
 
 function resetForm() {
   const copy = t();
+  currentEditingRecord = null;
+  setFormLocked(false);
   validationActive = false;
   document.querySelectorAll(".score-input").forEach(el => {
     el.value = "";
@@ -896,6 +1364,8 @@ function resetForm() {
 
 function clearHistory() {
   const copy = t();
+  currentEditingRecord = null;
+  setFormLocked(false);
   localStorage.removeItem(STORAGE_KEY);
   renderHistory();
   setStatus(copy.statuses.clearHistorySuccess, "info");
@@ -1001,6 +1471,7 @@ function setupInteractiveCards() {
 function init() {
   applyStaticTranslations();
   setDefaultAssessmentTime();
+  setDefaultHistoryDate();
   renderAllMetricButtons();
   renderHistory();
   syncLocationButtons();
@@ -1010,6 +1481,8 @@ function init() {
   setupInstallPrompt();
 
   document.addEventListener("click", event => {
+    if (historyFormLocked) return;
+
     const metricButton = event.target.closest(".metric-option-button");
     if (metricButton) {
       setMetricValue(
@@ -1029,17 +1502,46 @@ function init() {
 
   document.querySelectorAll(".spo2-scale").forEach(el => {
     el.addEventListener("change", event => {
+      if (historyFormLocked) return;
       renderSpo2Options(event.target.value);
       updateUI();
     });
   });
 
   selectors.hn.addEventListener("input", () => {
+    if (historyFormLocked) return;
     selectors.hn.value = sanitizeHN(selectors.hn.value);
     if (validationActive) updateAssessmentValidation(true);
   });
 
+  selectors.historyFilterHn?.addEventListener("input", () => {
+    selectors.historyFilterHn.value = sanitizeHN(selectors.historyFilterHn.value);
+    renderHistory();
+    scheduleHistoryRefresh();
+  });
+
+  selectors.historyFilterDate?.addEventListener("change", () => {
+    renderHistory();
+    refreshHistory({ silent: true });
+  });
+
+  selectors.historyFilterLocation?.addEventListener("change", () => {
+    renderHistory();
+    refreshHistory({ silent: true });
+  });
+
+  selectors.historyFilterLevel?.addEventListener("change", () => {
+    renderHistory();
+    refreshHistory({ silent: true });
+  });
+
+  selectors.historyFilterRed?.addEventListener("change", () => {
+    renderHistory();
+    refreshHistory({ silent: true });
+  });
+
   selectors.assessmentTime.addEventListener("input", () => {
+    if (historyFormLocked) return;
     if (validationActive) updateAssessmentValidation(true);
   });
 
@@ -1051,9 +1553,31 @@ function init() {
   selectors.mobileResetBtn?.addEventListener("click", resetForm);
   selectors.resetBtnTop?.addEventListener("click", resetForm);
   selectors.clearHistoryBtn.addEventListener("click", clearHistory);
+  selectors.refreshHistoryBtn?.addEventListener("click", () => {
+    refreshHistory();
+  });
+  selectors.historyTable?.addEventListener("click", event => {
+    const row = event.target.closest("[data-history-index]");
+    if (!row) return;
+
+    const index = Number.parseInt(row.dataset.historyIndex || "-1", 10);
+    if (Number.isNaN(index) || index < 0) return;
+
+    loadHistoryItemIntoForm(historyState.displayedItems[index]);
+  });
+  selectors.resetHistoryFiltersBtn?.addEventListener("click", () => {
+    setDefaultHistoryDate();
+    if (selectors.historyFilterHn) selectors.historyFilterHn.value = "";
+    if (selectors.historyFilterLocation) selectors.historyFilterLocation.value = "";
+    if (selectors.historyFilterLevel) selectors.historyFilterLevel.value = "";
+    if (selectors.historyFilterRed) selectors.historyFilterRed.value = "";
+    renderHistory();
+    refreshHistory({ silent: true });
+  });
   window.addEventListener("resize", syncPanelHeights);
   window.addEventListener("scroll", syncPanelHeights, { passive: true });
   requestAnimationFrame(syncPanelHeights);
+  refreshHistory();
 }
 
 document.addEventListener("DOMContentLoaded", init);

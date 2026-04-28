@@ -325,6 +325,18 @@ h1, h2, h3, .result-score, .status-pill, .btn, .hero-badge {
   box-shadow: 0 10px 28px rgba(62, 125, 145, 0.08);
 }
 
+.history-locked {
+  opacity: .92;
+}
+
+.history-locked .metric-option-button:disabled,
+.history-locked .location-option:disabled,
+.history-locked .btn-check:disabled + .metric-scale-btn,
+.history-locked input:disabled {
+  cursor: not-allowed;
+  opacity: .72;
+}
+
 .metric-header {
   display: flex;
   align-items: center;
@@ -850,6 +862,32 @@ h1, h2, h3, .result-score, .status-pill, .btn, .hero-badge {
   overflow: hidden;
 }
 
+.history-filter-panel {
+  display: grid;
+  gap: .75rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(22, 84, 111, 0.12);
+  background: linear-gradient(180deg, rgba(248, 252, 255, 0.95), rgba(237, 246, 251, 0.98));
+}
+
+.history-source-note {
+  min-height: 1.5rem;
+  color: var(--muted);
+  font-size: 1.02rem;
+}
+
+.history-result-count {
+  min-height: 1.5rem;
+  color: var(--text);
+  font-size: 1.04rem;
+  font-weight: 700;
+}
+
+.history-source-note.error {
+  color: #b91c1c;
+}
+
 .custom-table {
   --bs-table-bg: transparent;
   --bs-table-color: var(--text);
@@ -876,6 +914,14 @@ h1, h2, h3, .result-score, .status-pill, .btn, .hero-badge {
   padding: .9rem 1rem;
   vertical-align: middle;
   font-size: 1.16rem;
+}
+
+.history-row {
+  cursor: pointer;
+}
+
+.history-row:hover {
+  background: rgba(8, 145, 178, 0.08);
 }
 
 .save-status {
