@@ -1,6 +1,7 @@
 const SHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzvTuHAb78nlFWPzu6UAJoI_MPJuviIPxgBVP_xYNp7bP-nmH1RqqqwBUp-iEQ9pVcR/exec";
 const STORAGE_KEY = "suandok-news-history-v2";
 const LANGUAGE_KEY = "suandok-news-language";
+const ADMIN_AUTH_KEY = "suandok-news-admin-auth-v1";
 const HISTORY_FETCH_LIMIT = 100;
 
 const I18N = {
@@ -28,6 +29,7 @@ const I18N = {
     historyHeadScore: "คะแนน",
     historyHeadLevel: "ระดับ",
     historyHeadTime: "เวลา",
+    historyHeadAction: "จัดการ",
     historyFilterDateLabel: "เลือกวันที่",
     historyFilterHnLabel: "ค้นหา HN",
     historyFilterLocationLabel: "สถานที่",
@@ -45,6 +47,17 @@ const I18N = {
     historyFilterAllOption: "ทั้งหมด",
     historyFilterRedOnly: "พบ RED",
     historyFilterRedNone: "ไม่พบ RED",
+    adminLoginToggle: "Admin Login",
+    adminLogout: "Logout",
+    adminUsernameLabel: "Username",
+    adminPasswordLabel: "Password",
+    adminLoginBtn: "Login",
+    adminDelete: "ลบ",
+    adminDeleteConfirm: "ยืนยันลบประวัตินี้ใช่หรือไม่",
+    adminDeleteSuccess: "ลบประวัติเรียบร้อย",
+    adminLoginSuccess: "Admin login สำเร็จ",
+    adminLoginFailed: "Username หรือ Password ไม่ถูกต้อง",
+    adminRequired: "กรุณา login ก่อนลบข้อมูล",
     resultSectionTitle: "ผลการประเมิน",
     resultSectionSubtitle: "อัปเดตแบบเรียลไทม์",
     totalScoreLabel: "คะแนนรวม",
@@ -197,7 +210,9 @@ const I18N = {
       saveError: "บันทึกลงเครื่องสำเร็จ แต่ส่งไป Google Sheet ไม่สำเร็จ",
       resetSuccess: "รีเซ็ตข้อมูลเรียบร้อย",
       clearHistorySuccess: "ล้างข้อมูลในเครื่องเรียบร้อย",
-      historyLoaded: "โหลดประวัติลงในฟอร์มเรียบร้อย และล็อกค่าไว้แล้ว กดรีเซ็ตหากต้องการกรอกใหม่"
+      historyLoaded: "โหลดประวัติลงในฟอร์มเรียบร้อย และล็อกค่าไว้แล้ว กดรีเซ็ตหากต้องการกรอกใหม่",
+      adminDeleteError: "ลบประวัติไม่สำเร็จ",
+      adminSessionExpired: "Session หมดอายุ กรุณา login ใหม่"
     }
   },
   en: {
@@ -224,6 +239,7 @@ const I18N = {
     historyHeadScore: "Score",
     historyHeadLevel: "Level",
     historyHeadTime: "Time",
+    historyHeadAction: "Action",
     historyFilterDateLabel: "Select Date",
     historyFilterHnLabel: "Search HN",
     historyFilterLocationLabel: "Location",
@@ -241,6 +257,17 @@ const I18N = {
     historyFilterAllOption: "All",
     historyFilterRedOnly: "RED Found",
     historyFilterRedNone: "No RED",
+    adminLoginToggle: "Admin Login",
+    adminLogout: "Logout",
+    adminUsernameLabel: "Username",
+    adminPasswordLabel: "Password",
+    adminLoginBtn: "Login",
+    adminDelete: "Delete",
+    adminDeleteConfirm: "Delete this history record?",
+    adminDeleteSuccess: "History record deleted successfully",
+    adminLoginSuccess: "Admin login successful",
+    adminLoginFailed: "Invalid username or password",
+    adminRequired: "Please login before deleting records",
     resultSectionTitle: "Assessment Result",
     resultSectionSubtitle: "Updated in real time",
     totalScoreLabel: "Total Score",
@@ -393,7 +420,9 @@ const I18N = {
       saveError: "Saved locally, but sending to Google Sheet failed",
       resetSuccess: "Form reset successfully",
       clearHistorySuccess: "Local cache cleared successfully",
-      historyLoaded: "History record loaded into the form and locked. Press reset to enter new values"
+      historyLoaded: "History record loaded into the form and locked. Press reset to enter new values",
+      adminDeleteError: "Failed to delete history record",
+      adminSessionExpired: "Session expired. Please login again"
     }
   }
 };
@@ -419,6 +448,13 @@ const selectors = {
   adviceBox: document.getElementById("adviceBox"),
   historyTable: document.getElementById("historyTable"),
   clearHistoryBtn: document.getElementById("clearHistoryBtn"),
+  toggleAdminLoginBtn: document.getElementById("toggleAdminLoginBtn"),
+  adminLogoutBtn: document.getElementById("adminLogoutBtn"),
+  adminLoginPanel: document.getElementById("adminLoginPanel"),
+  adminUsername: document.getElementById("adminUsername"),
+  adminPassword: document.getElementById("adminPassword"),
+  adminLoginBtn: document.getElementById("adminLoginBtn"),
+  adminStatus: document.getElementById("adminStatus"),
   refreshHistoryBtn: document.getElementById("refreshHistoryBtn"),
   resetHistoryFiltersBtn: document.getElementById("resetHistoryFiltersBtn"),
   historyFilterDate: document.getElementById("historyFilterDate"),
@@ -453,6 +489,7 @@ let validationActive = false;
 let historyFilterTimer = null;
 let currentEditingRecord = null;
 let historyFormLocked = false;
+let adminAuth = readAdminAuth();
 const historyState = {
   remoteItems: [],
   displayedItems: [],
@@ -463,6 +500,32 @@ const historyState = {
 
 function t() {
   return I18N[currentLanguage] || I18N.th;
+}
+
+function readAdminAuth() {
+  try {
+    const raw = localStorage.getItem(ADMIN_AUTH_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || !parsed.token) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function persistAdminAuth(auth) {
+  adminAuth = auth && auth.token ? auth : null;
+  if (adminAuth) {
+    localStorage.setItem(ADMIN_AUTH_KEY, JSON.stringify(adminAuth));
+  } else {
+    localStorage.removeItem(ADMIN_AUTH_KEY);
+  }
+  updateAdminUI();
+}
+
+function isAdminLoggedIn() {
+  return Boolean(adminAuth && adminAuth.token && (!adminAuth.expiresAt || Date.now() < adminAuth.expiresAt));
 }
 
 function setDefaultAssessmentTime() {
@@ -624,6 +687,12 @@ function applyStaticTranslations() {
   document.getElementById("historyHeadScore").textContent = copy.historyHeadScore;
   document.getElementById("historyHeadLevel").textContent = copy.historyHeadLevel;
   document.getElementById("historyHeadTime").textContent = copy.historyHeadTime;
+  if (document.getElementById("historyHeadAction")) document.getElementById("historyHeadAction").textContent = copy.historyHeadAction;
+  if (selectors.toggleAdminLoginBtn) selectors.toggleAdminLoginBtn.textContent = copy.adminLoginToggle;
+  if (selectors.adminLogoutBtn) selectors.adminLogoutBtn.textContent = copy.adminLogout;
+  if (document.getElementById("adminUsernameLabel")) document.getElementById("adminUsernameLabel").textContent = copy.adminUsernameLabel;
+  if (document.getElementById("adminPasswordLabel")) document.getElementById("adminPasswordLabel").textContent = copy.adminPasswordLabel;
+  if (selectors.adminLoginBtn) selectors.adminLoginBtn.textContent = copy.adminLoginBtn;
   document.getElementById("resultSectionTitle").textContent = copy.resultSectionTitle;
   document.getElementById("resultSectionSubtitle").textContent = copy.resultSectionSubtitle;
   document.getElementById("totalScoreLabel").textContent = copy.totalScoreLabel;
@@ -638,6 +707,26 @@ function applyStaticTranslations() {
   document.getElementById("adviceSectionTitle").textContent = copy.adviceSectionTitle;
   selectors.langThBtn.classList.toggle("active", currentLanguage === "th");
   selectors.langEnBtn.classList.toggle("active", currentLanguage === "en");
+  updateAdminUI();
+}
+
+function updateAdminUI() {
+  const copy = t();
+  const loggedIn = isAdminLoggedIn();
+
+  selectors.toggleAdminLoginBtn?.classList.toggle("d-none", loggedIn);
+  selectors.adminLogoutBtn?.classList.toggle("d-none", !loggedIn);
+
+  if (loggedIn && selectors.adminLoginPanel) {
+    selectors.adminLoginPanel.classList.add("d-none");
+  }
+
+  if (selectors.adminStatus && loggedIn) {
+    selectors.adminStatus.textContent = `${copy.adminLoginSuccess}`;
+    selectors.adminStatus.classList.remove("error");
+  }
+
+  renderHistory();
 }
 
 function renderMetricButtons(containerId, inputId, options) {
@@ -903,6 +992,11 @@ function saveLocal(data, match = null) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(nextHistory.slice(0, 100)));
 }
 
+function deleteLocalHistory(match) {
+  const history = getHistory().filter(item => !isSameHistoryRecord(item, match));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(history.slice(0, 100)));
+}
+
 function getHistoryFilters() {
   const hn = sanitizeHN(selectors.historyFilterHn?.value || "");
 
@@ -1138,7 +1232,7 @@ function renderHistory() {
   if (!items.length) {
     selectors.historyTable.innerHTML = `
       <tr>
-        <td colspan="5" class="text-center text-secondary-light py-4">${escapeHtml(historyState.remoteLoaded ? copy.historySourceEmpty : copy.noHistory)}</td>
+        <td colspan="6" class="text-center text-secondary-light py-4">${escapeHtml(historyState.remoteLoaded ? copy.historySourceEmpty : copy.noHistory)}</td>
       </tr>
     `;
     return;
@@ -1151,6 +1245,9 @@ function renderHistory() {
       <td><span class="badge text-bg-dark border">${item.score}</span></td>
       <td>${escapeHtml(copy.levelLabels[item.levelKey] || item.level || "-")}</td>
       <td>${escapeHtml(formatDateTime(item.assessmentTime || item.savedAt))}</td>
+      <td class="history-action-cell">
+        ${isAdminLoggedIn() ? `<button type="button" class="btn btn-outline-danger btn-sm" data-delete-history-index="${index}">${escapeHtml(copy.adminDelete)}</button>` : "-"}
+      </td>
     </tr>
   `).join("");
 }
@@ -1242,6 +1339,101 @@ async function saveToGoogleSheet(payload) {
   });
 
   return { ok: true };
+}
+
+async function postJsonToSheet(payload) {
+  const response = await fetch(SHEET_WEBAPP_URL, {
+    method: "POST",
+    mode: "cors",
+    headers: {
+      "Content-Type": "text/plain;charset=utf-8"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  return response.json();
+}
+
+async function loginAdmin() {
+  const copy = t();
+  const username = selectors.adminUsername?.value.trim() || "";
+  const password = selectors.adminPassword?.value || "";
+
+  try {
+    const payload = await postJsonToSheet({
+      mode: "login",
+      username,
+      password
+    });
+
+    if (!payload || payload.ok !== true || !payload.token) {
+      throw new Error(payload?.error || copy.adminLoginFailed);
+    }
+
+    persistAdminAuth({
+      token: payload.token,
+      expiresAt: payload.expiresAt || null,
+      username: payload.username || username
+    });
+    if (selectors.adminPassword) selectors.adminPassword.value = "";
+    if (selectors.adminStatus) {
+      selectors.adminStatus.textContent = copy.adminLoginSuccess;
+      selectors.adminStatus.classList.remove("error");
+    }
+  } catch (error) {
+    if (selectors.adminStatus) {
+      selectors.adminStatus.textContent = copy.adminLoginFailed;
+      selectors.adminStatus.classList.add("error");
+    }
+    console.error(error);
+  }
+}
+
+async function deleteHistoryRecord(item) {
+  const copy = t();
+
+  if (!isAdminLoggedIn()) {
+    setStatus(copy.adminRequired, "error");
+    return;
+  }
+
+  if (!window.confirm(copy.adminDeleteConfirm)) return;
+
+  try {
+    const payload = await postJsonToSheet({
+      mode: "delete",
+      token: adminAuth.token,
+      match: {
+        savedAt: item.savedAt || "",
+        hn: item.hn || "",
+        assessmentTime: item.assessmentTime || ""
+      }
+    });
+
+    if (!payload || payload.ok !== true) {
+      throw new Error(payload?.error || copy.statuses.adminDeleteError);
+    }
+
+    deleteLocalHistory(item);
+    if (currentEditingRecord && isSameHistoryRecord(currentEditingRecord, item)) {
+      resetForm();
+    }
+    await refreshHistory({ silent: true });
+    setStatus(copy.adminDeleteSuccess, "success");
+  } catch (error) {
+    const message = String(error?.message || error);
+    if (/expired|invalid token/i.test(message)) {
+      persistAdminAuth(null);
+      setStatus(copy.statuses.adminSessionExpired, "error");
+    } else {
+      setStatus(copy.statuses.adminDeleteError, "error");
+    }
+    console.error(error);
+  }
 }
 
 function getEditingMatchPayload() {
@@ -1556,7 +1748,33 @@ function init() {
   selectors.refreshHistoryBtn?.addEventListener("click", () => {
     refreshHistory();
   });
+  selectors.toggleAdminLoginBtn?.addEventListener("click", () => {
+    selectors.adminLoginPanel?.classList.toggle("d-none");
+  });
+  selectors.adminLoginBtn?.addEventListener("click", loginAdmin);
+  selectors.adminPassword?.addEventListener("keydown", event => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      loginAdmin();
+    }
+  });
+  selectors.adminLogoutBtn?.addEventListener("click", () => {
+    persistAdminAuth(null);
+    if (selectors.adminStatus) {
+      selectors.adminStatus.textContent = "";
+      selectors.adminStatus.classList.remove("error");
+    }
+  });
   selectors.historyTable?.addEventListener("click", event => {
+    const deleteButton = event.target.closest("[data-delete-history-index]");
+    if (deleteButton) {
+      const deleteIndex = Number.parseInt(deleteButton.dataset.deleteHistoryIndex || "-1", 10);
+      if (!Number.isNaN(deleteIndex) && deleteIndex >= 0) {
+        deleteHistoryRecord(historyState.displayedItems[deleteIndex]);
+      }
+      return;
+    }
+
     const row = event.target.closest("[data-history-index]");
     if (!row) return;
 

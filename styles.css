@@ -871,6 +871,15 @@ h1, h2, h3, .result-score, .status-pill, .btn, .hero-badge {
   background: linear-gradient(180deg, rgba(248, 252, 255, 0.95), rgba(237, 246, 251, 0.98));
 }
 
+.history-admin-panel {
+  display: grid;
+  gap: .75rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(217, 119, 6, 0.18);
+  background: linear-gradient(180deg, rgba(255, 251, 235, 0.96), rgba(255, 247, 237, 0.98));
+}
+
 .history-source-note {
   min-height: 1.5rem;
   color: var(--muted);
@@ -922,6 +931,11 @@ h1, h2, h3, .result-score, .status-pill, .btn, .hero-badge {
 
 .history-row:hover {
   background: rgba(8, 145, 178, 0.08);
+}
+
+.history-action-cell {
+  width: 1%;
+  white-space: nowrap;
 }
 
 .save-status {

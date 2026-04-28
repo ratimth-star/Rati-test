@@ -266,6 +266,28 @@
                 <button id="clearHistoryBtn" class="btn btn-outline-danger btn-sm" type="button">ล้างประวัติ</button>
               </div>
 
+              <div class="d-flex flex-wrap gap-2 mb-3">
+                <button id="toggleAdminLoginBtn" class="btn btn-outline-warning btn-sm" type="button">Admin Login</button>
+                <button id="adminLogoutBtn" class="btn btn-outline-secondary btn-sm d-none" type="button">Logout</button>
+              </div>
+
+              <div id="adminLoginPanel" class="history-admin-panel d-none mb-3">
+                <div class="row g-2 align-items-end">
+                  <div class="col-12 col-md-4">
+                    <label id="adminUsernameLabel" for="adminUsername" class="form-label mb-1">Username</label>
+                    <input id="adminUsername" class="form-control custom-control" type="text" autocomplete="username" />
+                  </div>
+                  <div class="col-12 col-md-4">
+                    <label id="adminPasswordLabel" for="adminPassword" class="form-label mb-1">Password</label>
+                    <input id="adminPassword" class="form-control custom-control" type="password" autocomplete="current-password" />
+                  </div>
+                  <div class="col-12 col-md-4">
+                    <button id="adminLoginBtn" class="btn btn-warning w-100" type="button">Login</button>
+                  </div>
+                </div>
+                <p id="adminStatus" class="history-source-note mb-0" aria-live="polite"></p>
+              </div>
+
               <div class="history-filter-panel mb-3">
                 <div class="row g-2 align-items-end">
                   <div class="col-12 col-md-3">
@@ -308,6 +330,7 @@
                       <th id="historyHeadScore">คะแนน</th>
                       <th id="historyHeadLevel">ระดับ</th>
                       <th id="historyHeadTime">เวลา</th>
+                      <th id="historyHeadAction">จัดการ</th>
                     </tr>
                   </thead>
                   <tbody id="historyTable"></tbody>
